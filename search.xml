@@ -4,7 +4,36 @@
   
     
     <entry>
-      <title>LanQiao Baseboard Development&#39;s log</title>
+      <title>LanQiao Baseboard Development&#39;s log02</title>
+      <link href="/2024/11/20/LanQiao_Baseboard_02/PWM-Output/"/>
+      <url>/2024/11/20/LanQiao_Baseboard_02/PWM-Output/</url>
+      
+        <content type="html"><![CDATA[<h1 id="LanQiao-Baseboard-development’s-log-02"><a href="#LanQiao-Baseboard-development’s-log-02" class="headerlink" title="LanQiao Baseboard development’s log 02"></a><em><strong>LanQiao Baseboard development’s log 02</strong></em></h1><h2 id="PWM-Output-with-Changeable-Duty"><a href="#PWM-Output-with-Changeable-Duty" class="headerlink" title="PWM Output with Changeable Duty"></a><em><strong>PWM Output with Changeable Duty</strong></em></h2><h3 id="PWM-Generate-and-Output"><a href="#PWM-Generate-and-Output" class="headerlink" title="PWM Generate and Output"></a><em><strong>PWM Generate and Output</strong></em></h3><p>PWM, simply regarded as square signal, is important in many aspects like motor driven or any thing that can change effect by the level of voltage. So how can we generate a PWM signal? </p><p>We can easily generate a PWM signal through our STM32’s TIM modules. The basic configure that you need to change is:</p><ul><li>First, Activate the TIM and choose a channel as PWM output channel. <span style="color: red; font-size: 20px">Attention!</span> You need to choose CHx rather CHxN which means the reverse of a normal signal. It will output low voltage when a normal PWM output high voltage.</li><li>Second, You should set the prescaler value and counter value. The TIM’s frequency is determined by the prescaler values, and the freq is $F_{pres} &#x3D; \frac{F_{main}}{prescaler+1}$. And the real freq of TIM you choosed is the frequency of prescaler divided by the counter value plus one. $F &#x3D; \frac{F_{pres}}{counter + 1}$.</li><li>Third, the counter means how many count in one period. So you can set the pulse value which should be smaller than the counter because the value $\frac{pulse}{counter}$ is the duty of the PWM.</li></ul><p>Above all is the basic configure of PWM settings.<br><img src="/img/configure.png" alt="PWM Configure"></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 嵌入式开发 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> LanQiao </tag>
+            
+            <tag> STM32 </tag>
+            
+            <tag> PWM </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>LanQiao Baseboard Development&#39;s log01</title>
       <link href="/2024/11/18/LanQiao_Baseboard_01/LED&amp;LCD&amp;Key-development/"/>
       <url>/2024/11/18/LanQiao_Baseboard_01/LED&amp;LCD&amp;Key-development/</url>
       
@@ -23,6 +52,8 @@
             <tag> LanQiao </tag>
             
             <tag> STM32 </tag>
+            
+            <tag> GPIO </tag>
             
         </tags>
       
