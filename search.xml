@@ -4,6 +4,68 @@
   
     
     <entry>
+      <title>LanQiao Baseboard Development&#39;s log03</title>
+      <link href="/2024/11/22/LanQiao_Baseboard_04/ADC-Single-Conversion/"/>
+      <url>/2024/11/22/LanQiao_Baseboard_04/ADC-Single-Conversion/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      <categories>
+          
+          <category> 嵌入式开发 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> LanQiao </tag>
+            
+            <tag> STM32 </tag>
+            
+            <tag> ADC </tag>
+            
+            <tag> Single-Conversion </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>LanQiao Baseboard Development&#39;s log03</title>
+      <link href="/2024/11/21/LanQiao_Baseboard_03/PWM_InputCapture/"/>
+      <url>/2024/11/21/LanQiao_Baseboard_03/PWM_InputCapture/</url>
+      
+        <content type="html"><![CDATA[<h1 id="LanQiao-Baseboard-development’s-log-03"><a href="#LanQiao-Baseboard-development’s-log-03" class="headerlink" title="LanQiao Baseboard development’s log 03"></a><em><strong>LanQiao Baseboard development’s log 03</strong></em></h1><h2 id="PWM-Input-Capture-Mode-for-Frequency-and-Duty-Calculation"><a href="#PWM-Input-Capture-Mode-for-Frequency-and-Duty-Calculation" class="headerlink" title="PWM Input Capture Mode for Frequency and Duty Calculation"></a><em><strong>PWM Input Capture Mode for Frequency and Duty Calculation</strong></em></h2><h3 id="What-is-PWM-Input-Capture-Mode"><a href="#What-is-PWM-Input-Capture-Mode" class="headerlink" title="What is PWM Input Capture Mode"></a><em><strong>What is PWM Input Capture Mode</strong></em></h3><p>PWM input capture mode, is a special mode of TIM, which is especially useful in frequency measure. But you can’t use it occasionally because it needs a PWM input. Its original theory is below.</p><p><img src="/img/LanQiao_Baseboard03_theory.png" alt="Theory"></p><h3 id="How-Can-We-Configure-the-Input-Capture-Mode"><a href="#How-Can-We-Configure-the-Input-Capture-Mode" class="headerlink" title="How Can We Configure the Input Capture Mode"></a><em><strong>How Can We Configure the Input Capture Mode</strong></em></h3><p>You should start the TIM input capture and rewrite the callback function. The original theory is when Timer detect the rising edge of PWM signal and then set the TIM counter to zero(Init). When the Timer check the falling edge, the TIM channel will store the counter values. So if Timer detect the second rising edge of PWM, you can read the value of channels which detect the rising edge and the falling edge.</p><p>As the counter values refer to the time between two rising edge, which means the time of a whole period, and the values between the first rising edge and falling edge is the time of high level. Based on the knowledge above, you can exactly understand how can we calculate the frequency and duty of PWM.</p><p>What’s more is that once you get the second rising edge values, you should set the counter of TIM to zeros and restart TIM input capture. And the configuration of TIM is as followed.</p><p><img src="/img/LanQiao_Baseboard03_configure.png" alt="Configuration"></p><p>First, you need to select the source clock and select two channel, one is direct mode and the other is indirect mode. The counter value should be as large as possible because if the signal frequency is low and the counter value between two rising edge is very large, the second rising edge counter value may be smaller than the first one as the counter reloaded.</p><p>Second, you need to configure the indirect mode channel to falling edge to calculate the duty of PWM.</p><h3 id="How-to-Write-the-Code-of-PWM-Input-Capture"><a href="#How-to-Write-the-Code-of-PWM-Input-Capture" class="headerlink" title="How to Write the Code of PWM Input Capture"></a><em><strong>How to Write the Code of PWM Input Capture</strong></em></h3><p>Simply, you need to enable the TIM Channel.</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">HAL_TIM_IC_Start_IT(&amp;htim2, TIM_CHANNEL_1);</span><br><span class="line">HAL_TIM_IC_Start_IT(&amp;htim2, TIM_CHANNEL_2);</span><br><span class="line">HAL_TIM_IC_Start_IT(&amp;htim3, TIM_CHANNEL_1);</span><br><span class="line">HAL_TIM_IC_Start_IT(&amp;htim3, TIM_CHANNEL_2);</span><br></pre></td></tr></table></figure><p>Then, you should rewrite the TIM IC CallBack function. You can define the read-counter values as followed.</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">bool</span> Is_first_IC1 = <span class="number">1</span>;      <span class="comment">// Whether is firstly capture</span></span><br><span class="line"><span class="type">bool</span> Is_first_IC2 = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">uint16_t</span> fir_count1 = <span class="number">0</span>;    <span class="comment">// The first IC TIM</span></span><br><span class="line"><span class="type">uint32_t</span> down_count1 = <span class="number">0</span>;</span><br><span class="line"><span class="type">uint32_t</span> sec_count1 = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">uint16_t</span> fir_count2 = <span class="number">0</span>;    <span class="comment">// The second IC TIM</span></span><br><span class="line"><span class="type">uint32_t</span> down_count2 = <span class="number">0</span>;</span><br><span class="line"><span class="type">uint32_t</span> sec_count2 = <span class="number">0</span>;</span><br></pre></td></tr></table></figure><p>And then is the main function.</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">HAL_TIM_IC_CaptureCallback</span><span class="params">(TIM_HandleTypeDef *htim)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> (htim-&gt;Instance == TIM2)</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> (htim-&gt;Channel == HAL_TIM_ACTIVE_CHANNEL_1)</span><br><span class="line">    &#123;</span><br><span class="line">      fir_count1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);</span><br><span class="line">      sec_count1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);</span><br><span class="line">      __HAL_TIM_SetCounter(htim, <span class="number">0</span>);</span><br><span class="line">      HAL_TIM_IC_Start_IT(htim, TIM_CHANNEL_1);</span><br><span class="line">      HAL_TIM_IC_Start_IT(htim, TIM_CHANNEL_2);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (htim-&gt;Instance == TIM3)</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> (htim-&gt;Channel == HAL_TIM_ACTIVE_CHANNEL_1)</span><br><span class="line">    &#123;</span><br><span class="line">      fir_count2 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);</span><br><span class="line">      sec_count2 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);  <span class="comment">// store when captured at falling edge</span></span><br><span class="line">      __HAL_TIM_SetCounter(htim, <span class="number">0</span>);</span><br><span class="line">      HAL_TIM_IC_Start_IT(htim, TIM_CHANNEL_1);</span><br><span class="line">      HAL_TIM_IC_Start_IT(htim, TIM_CHANNEL_2);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>As the theory mentioned above shows, if the callback is from Channel 1(rising edge), read the values and reset the counter values. <span style="color: red; font-size: 20px">But Attention!</span> This code doesn’t care about the problem that if the frequency of signal is low and the counter value of the rising edge is smaller than the one of falling edge.</p><p>As for the duty, you can simply get it by dividing the rising edge value with the falling edge value.<br>$$ Freq &#x3D; \frac{F_{TIM}}{Counter_{fir}}$$<br>$$ Duty &#x3D; \frac{Counter_{sec}}{Counter_{fir}} $$</p><p>That is the whole content of PWM input capture. Thanks for watching!</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 嵌入式开发 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> LanQiao </tag>
+            
+            <tag> STM32 </tag>
+            
+            <tag> PWM Input-Capture </tag>
+            
+            <tag> TIM direct&amp;Indirect Mode </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>LanQiao Baseboard Development&#39;s log02</title>
       <link href="/2024/11/20/LanQiao_Baseboard_02/PWM-Output/"/>
       <url>/2024/11/20/LanQiao_Baseboard_02/PWM-Output/</url>
@@ -24,7 +86,7 @@
             
             <tag> STM32 </tag>
             
-            <tag> PWM </tag>
+            <tag> PWM Output </tag>
             
         </tags>
       
