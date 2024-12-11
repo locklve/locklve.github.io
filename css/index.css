@@ -2314,8 +2314,8 @@ maxWidth1200()
   box-shadow: var(--anzhiyu-shadow-theme) !important;
 }
 .flexcard-flink-list > a {
-  width: calc(100% / 5 - 0.5rem);
-  height: 150px;
+  width: calc(100% / 10 - 0.5rem);
+  height: 250px;
   position: relative;
   display: block;
   margin: 0.5rem 0.25rem;
